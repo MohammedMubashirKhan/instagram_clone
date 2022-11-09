@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:instragran_clone/screens/comments_screens.dart';
-import 'package:instragran_clone/widgets/post_card.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:instragran_clone/screens/person_screen.dart';
+import 'package:instragran_clone/utils/colors.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({Key? key}) : super(key: key);
@@ -11,25 +12,106 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _searchController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Search Screen"),
+        backgroundColor: mobileBackgroundColor,
+        title: TextFormField(
+          controller: _searchController,
+          decoration: const InputDecoration(labelText: "Search for a user"),
+          onFieldSubmitted: (value) {
+            // it build screen when username is searched
+            setState(() {});
+          },
+        ),
       ),
-      body: PostCard(
-        snap: {
-          "likes": [],
-          "postUrl":
-              "https://firebasestorage.googleapis.com/v0/b/second-hand-book-exchang-1cf57.appspot.com/o/post%2FbjtN67cjEwR9SVpY2xv5m76eGz52%2Fdabb7cfc-98a2-4c5c-901d-0c6edb5a30a6?alt=media&token=f9e033b6-9a21-4591-864e-9b402dd5bb60",
-          "description": "print",
-          "dataPublished": Timestamp(1662627052, 964000000),
-          "uid": "bjtN67cjEwR9SVpY2xv5m76eGz52",
-          "profImage":
-              "https://firebasestorage.googleapis.com/v0/b/second-hand-book-exchang-1cf57.appspot.com/o/profilePic%2FbjtN67cjEwR9SVpY2xv5m76eGz52?alt=media&token=d710dc59-8470-429a-8218-b87292d7e54e",
-          "postId": "156c1211-085f-41c0-b94b-91912ad4b8e5",
-          "username": "mmk",
-        },
+      body: _searchController.text.isNotEmpty
+          ? FutureBuilder(
+              future: FirebaseFirestore.instance
+                  .collection("users")
+                  .where("username",
+                      isGreaterThanOrEqualTo: _searchController.text)
+                  .get(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                } else {
+                  print((snapshot.data as dynamic).docs);
+                  return ListView.builder(
+                    itemCount: (snapshot.data! as dynamic).docs.length,
+                    itemBuilder: (context, index) {
+                      return InkWell(
+                        onTap: () =>
+                            Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => PersonScreen(
+                              uid: (snapshot.data! as dynamic).docs[index]
+                                  ["uid"],
+                              isProfile: false),
+                        )),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: NetworkImage(
+                                (snapshot.data! as dynamic).docs[index]
+                                    ["photoUrl"]),
+                          ),
+                          title: Text((snapshot.data! as dynamic).docs[index]
+                              ["username"]),
+                          subtitle: Text(
+                              (snapshot.data! as dynamic).docs[index]["bio"]),
+                          trailing: Text(
+                              "${(snapshot.data! as dynamic).docs[index]["followers"].length} Flollowers"),
+                        ),
+                      );
+                    },
+                  );
+                }
+              },
+            )
+          : Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: FutureBuilder(
+                future: FirebaseFirestore.instance.collection("posts").get(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  return StaggeredGridView.countBuilder(
+                    staggeredTileBuilder: (index) =>
+                        StaggeredTile.count(index % 3 == 0 ? 2 : 1, 2),
+                    itemCount: (snapshot.data as dynamic).docs.length,
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    itemBuilder: (context, index) => buildImage(
+                        index, (snapshot.data as dynamic).docs[index].data()),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+
+  Card buildImage(int index, Map<String, dynamic> snapshot) {
+    return Card(
+      margin: const EdgeInsets.all(0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Image.network(
+        snapshot["postUrl"],
+        // "https://source.unsplash.com/random/240*300/?sig=$index"
       ),
     );
   }

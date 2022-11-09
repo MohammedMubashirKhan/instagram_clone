@@ -14,13 +14,12 @@ class FeedScreen extends StatelessWidget {
         backgroundColor: mobileBackgroundColor,
         title: SvgPicture.asset(
           "assets/ic_instagram.svg",
-          color: primaryColor,
-          height: 32,
+          height: 52,
         ),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: Icon(Icons.messenger_outline),
+            icon: const Icon(Icons.messenger_outline),
           ),
         ],
       ),
@@ -29,12 +28,10 @@ class FeedScreen extends StatelessWidget {
         builder: (context,
             AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(),
             );
-          }
-          // print(snapshot.data!.docs[0].data());
-          if (snapshot.hasData) {
+          } else {
             return ListView.builder(
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (context, index) => PostCard(
@@ -42,7 +39,6 @@ class FeedScreen extends StatelessWidget {
               ),
             );
           }
-          return Center(child: CircularProgressIndicator());
         },
       ),
     );

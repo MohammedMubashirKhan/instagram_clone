@@ -9,7 +9,6 @@ import 'package:instragran_clone/responsive/web_screen_layout.dart';
 import 'package:instragran_clone/screens/login_screen.dart';
 import 'package:instragran_clone/utils/colors.dart';
 import 'package:instragran_clone/utils/firebase_ID.dart';
-import 'package:instragran_clone/screens/comments_screens.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
