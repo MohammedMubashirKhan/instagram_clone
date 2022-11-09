@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: _isloading
                     ? Container(
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: CircularProgressIndicator(
+                        child: const CircularProgressIndicator(
                           color: primaryColor,
                         ),
                         width: double.infinity,

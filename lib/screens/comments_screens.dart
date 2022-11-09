@@ -1,21 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:instragran_clone/providers/user_provider.dart';
 import 'package:instragran_clone/resources/firestore_methods.dart';
 import 'package:instragran_clone/utils/utils.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../models/user.dart';
 
 class CommentsScreen extends StatefulWidget {
   final String postId;
-  final String uid;
+
   final String username;
   final String profileImg;
+  final bool withAppBar;
 
-  CommentsScreen({
-    Key? key,
-    required this.username,
-    required this.uid,
-    required this.postId,
-    required this.profileImg,
-  }) : super(key: key);
+  const CommentsScreen(
+      {Key? key,
+      required this.username,
+      required this.postId,
+      required this.profileImg,
+      this.withAppBar = true})
+      : super(key: key);
 
   @override
   State<CommentsScreen> createState() => _CommentsScreenState();
@@ -24,13 +30,13 @@ class CommentsScreen extends StatefulWidget {
 class _CommentsScreenState extends State<CommentsScreen> {
   final TextEditingController _commentController = TextEditingController();
 
-  void postComment() async {
+  void postComment(String uid) async {
     String res = " Error";
     res = await FirestoreMethods().postComment(
         postID: widget.postId,
         comment: _commentController.text,
         username: widget.username,
-        uid: widget.uid,
+        uid: uid,
         profileImg: widget.profileImg);
 
     if (res == "success") {
@@ -41,23 +47,24 @@ class _CommentsScreenState extends State<CommentsScreen> {
     }
   }
 
-  likeComment(
-    String commentId,
-    List likes,
-  ) async {
+  likeComment({
+    required String commentId,
+    required List likes,
+    required String uid,
+  }) async {
     String res = "Error";
-    if (likes.contains(widget.uid)) {
+    if (likes.contains(uid)) {
       res = await FirestoreMethods().likeComment(
         commentId: commentId,
         postId: widget.postId,
-        uid: widget.uid,
         toDislike: true,
+        uid: uid,
       );
     } else {
       res = await FirestoreMethods().likeComment(
         commentId: commentId,
         postId: widget.postId,
-        uid: widget.uid,
+        uid: uid,
       );
     }
   }
@@ -71,31 +78,31 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final User user = Provider.of<UserProvider>(context).getUser;
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            try {
-              Navigator.of(context).pop();
-            } catch (e) {
-              print(e.toString());
-            }
-          },
-          icon: Icon(Icons.arrow_back_ios),
-        ),
-        title: Text("Comments"),
-      ),
+      appBar: widget.withAppBar
+          ? AppBar(
+              leading: IconButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: const Icon(Icons.arrow_back_ios),
+              ),
+              title: const Text("Comments"),
+            )
+          : AppBar(),
       body: StreamBuilder(
         stream: FirebaseFirestore.instance
             .collection("posts")
             .doc(widget.postId)
             .collection("comments")
+            .orderBy("datePublished", descending: true)
             .snapshots(),
         builder: (context,
             AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             print("Loading");
-            return Center(
+            return const Center(
               child: CircularProgressIndicator(),
             );
           }
@@ -109,7 +116,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (context, index) {
                 return Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 26.0, vertical: 8.0),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -118,33 +126,74 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           snapshot.data!.docs[index].data()["profileImg"],
                         ),
                       ),
-                      Text(
-                        snapshot.data!.docs[index].data()["username"],
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16.0),
-                      ),
-                      SizedBox(
-                        width: 10,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: snapshot.data!.docs[index]
+                                        .data()["username"],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text:
+                                        "  ${snapshot.data!.docs[index].data()["comment"]}",
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Published date of comment
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                DateFormat.yMMMd().format(
+                                  snapshot.data!.docs[index]
+                                      .data()["datePublished"]
+                                      .toDate(),
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
                       ),
                       Expanded(
-                          child: Text(
-                              snapshot.data!.docs[index].data()["comment"])),
-                      IconButton(
-                          onPressed: () {
-                            likeComment(
-                              snapshot.data!.docs[index].data()["commentId"],
-                              snapshot.data!.docs[index].data()["likes"],
-                            );
-                          },
-                          icon: snapshot.data!.docs[index]
-                                      .data()["likes"]
-                                      .contains(widget.uid) ??
-                                  false
-                              ? Icon(
-                                  Icons.favorite,
-                                  color: Colors.red,
-                                )
-                              : Icon(Icons.favorite_border_outlined))
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: IconButton(
+                              onPressed: () {
+                                likeComment(
+                                  commentId: snapshot.data!.docs[index]
+                                      .data()["commentId"],
+                                  likes: snapshot.data!.docs[index]
+                                      .data()["likes"],
+                                  uid: user.uid,
+                                );
+                              },
+                              icon: snapshot.data!.docs[index]
+                                          .data()["likes"]
+                                          .contains(user.uid) ??
+                                      false
+                                  ? const Icon(
+                                      Icons.favorite,
+                                      color: Colors.red,
+                                    )
+                                  : const Icon(Icons.favorite_border_outlined)),
+                        ),
+                      )
                     ],
                   ),
                 );
@@ -152,25 +201,24 @@ class _CommentsScreenState extends State<CommentsScreen> {
             );
           }
           print("No Comments");
-          return Text(
+          return const Text(
             "No Coment is posted yet!!!",
             style: TextStyle(color: Colors.white, fontSize: 20),
           );
         },
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(26.0),
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundImage: NetworkImage(
-                  "https://images.unsplash.com/photo-1662751283309-829d4591be3a?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHw1fHx8ZW58MHx8fHw%3D&auto=format&fit=crop&w=500&q=60"),
+              backgroundImage: NetworkImage(user.photoUrl),
             ),
             Expanded(
               child: TextField(
                 controller: _commentController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Comment",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(
@@ -183,12 +231,12 @@ class _CommentsScreenState extends State<CommentsScreen> {
             IconButton(
               onPressed: () {
                 if (_commentController.text.isNotEmpty) {
-                  postComment();
+                  postComment(user.uid);
                 } else {
                   showSnackBar("Comments is empty", context);
                 }
               },
-              icon: Icon(Icons.send),
+              icon: const Icon(Icons.send),
             ),
           ],
         ),

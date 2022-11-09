@@ -75,8 +75,9 @@ class AuthMethods {
     }
     if (data.isEmpty) {
       return [0, res];
-    } else
+    } else {
       return data;
+    }
   }
 
   // logging in user

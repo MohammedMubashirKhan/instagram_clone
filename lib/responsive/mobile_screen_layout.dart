@@ -43,18 +43,19 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
 
   @override
   Widget build(BuildContext context) {
+    // navigationTap(1);
     return Scaffold(
       body: PageView(
         physics: const NeverScrollableScrollPhysics(),
         controller: _pagecontroller,
-        children: homeScreenItems,
         onPageChanged: changePage,
+        children: homeScreenItems,
       ),
       bottomNavigationBar: CupertinoTabBar(
         backgroundColor: mobileBackgroundColor,
         currentIndex: _page,
         items: [
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(
               Icons.home,
               // color: _page == 0 ? primeColor : secondaryColor,
@@ -72,10 +73,11 @@ class _MobileScreenLayoutState extends State<MobileScreenLayout> {
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.add_circle,
+              Icons.add_circle_outline,
+              size: 50,
               color: _page == 2 ? primaryColor : secondaryColor,
             ),
-            label: "",
+            // label: "Upload post",
             backgroundColor: primaryColor,
           ),
           BottomNavigationBarItem(

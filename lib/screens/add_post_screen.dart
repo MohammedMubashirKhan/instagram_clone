@@ -108,10 +108,11 @@ class _AddPosrScreenState extends State<AddPosrScreen> {
   @override
   Widget build(BuildContext context) {
     final User user = Provider.of<UserProvider>(context).getUser;
+
     return _file == null
         ? Center(
             child: IconButton(
-              icon: Icon(Icons.upload),
+              icon: const Icon(Icons.upload),
               onPressed: _selectImage,
             ),
           )
@@ -119,7 +120,7 @@ class _AddPosrScreenState extends State<AddPosrScreen> {
             appBar: AppBar(
               backgroundColor: mobileBackgroundColor,
               leading: IconButton(
-                icon: Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back),
                 onPressed: clearImage,
               ),
               title: const Text("Post to"),
@@ -169,7 +170,7 @@ class _AddPosrScreenState extends State<AddPosrScreen> {
                       width: MediaQuery.of(context).size.width * 0.45,
                       child: TextField(
                         controller: _descriptionController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: "Write a caption...",
                           border: InputBorder.none,
                         ),

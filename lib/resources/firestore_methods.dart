@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:instragran_clone/models/post.dart';
 import 'package:instragran_clone/resources/storage_method.dart';
@@ -23,7 +24,7 @@ class FirestoreMethods {
       String postDownloadUrl =
           await StorageMethod().uploadImageToStorage("post", file, true);
 
-      String postId = Uuid().v4();
+      String postId = const Uuid().v4();
       Post post = Post(
         postId: postId,
         description: description,
@@ -52,7 +53,7 @@ class FirestoreMethods {
     required String profileImg,
   }) async {
     String res = "Error";
-    String commentID = Uuid().v1();
+    String commentID = const Uuid().v1();
     try {
       await _firestore
           .collection("posts")
@@ -65,7 +66,8 @@ class FirestoreMethods {
         "comment": comment,
         "profileImg": profileImg,
         "commentId": commentID,
-        "likes": []
+        "likes": [],
+        "datePublished": DateTime.now(),
       });
       res = "success";
     } catch (e) {
@@ -106,5 +108,34 @@ class FirestoreMethods {
       print(e.toString());
     }
     return res;
+  }
+
+  Future<void> likePost({
+    required String postId,
+    required String uid,
+    bool toDislike = false,
+  }) async {
+    try {
+      if (toDislike) {
+        await _firestore.collection("posts").doc(postId).update({
+          "likes": FieldValue.arrayRemove([uid])
+        });
+      } else {
+        await _firestore.collection("posts").doc(postId).update({
+          "likes": FieldValue.arrayUnion([uid])
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  deletePost(String postId) async {
+    String res = "Some error occur";
+    try {
+      await _firestore.collection("posts").doc(postId).delete();
+    } catch (e) {
+      print(e.toString());
+    }
   }
 }

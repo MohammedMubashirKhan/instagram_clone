@@ -6,9 +6,13 @@ class UserProvider with ChangeNotifier {
   model.User? _user;
   final AuthMethods _authMethods = AuthMethods();
 
-  model.User get getUser {
+  get getUser {
     print("I am returning _user");
-    return _user!;
+    try {
+      return _user!;
+    } catch (e) {
+      print("I am causing error");
+    }
   }
 
   model.User getUserData() {
